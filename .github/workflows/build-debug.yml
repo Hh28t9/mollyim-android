@@ -1,4 +1,4 @@
-name: Build Debug APK
+name: Build FCM-WebRTC Variant (ProdWebsite)
 
 on:
   workflow_dispatch:
@@ -7,12 +7,14 @@ on:
       - fix-770
 
 env:
-  # Ép JVM và Kotlin Daemon chỉ được dùng tối đa 3GB RAM mỗi tiến trình
-  GRADLE_OPTS: "-Dorg.gradle.jvmargs='-Xmx3g -XX:+UseG1GC' -Dkotlin.daemon.jvmargs='-Xmx3g'"
+  # Cấp phát 4.5GB RAM và ép biên dịch Kotlin nội tiến trình (in-process)
+  GRADLE_OPTS: "-Dorg.gradle.jvmargs='-Xmx4500m -XX:+UseG1GC' -Dkotlin.compiler.execution.strategy=in-process"
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 120
+    
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -27,13 +29,13 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      # BẮT BUỘC: Giới hạn --max-workers=1 để ngăn đa luồng gây tràn RAM
-      - name: Build Debug APK
+      # Chỉ biên dịch đích danh ProdWebsiteDebug, vô hiệu hóa đa luồng và bỏ qua kiểm thử
+      - name: Build ProdWebsiteDebug APK
         run: ./gradlew assembleProdWebsiteDebug -x lint -x test --no-daemon --max-workers=1
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: molly-fix-770-apk
+          name: molly-fix-770-fcm-webrtc
           path: app/build/outputs/apk/**/*.apk
           
