@@ -1,8 +1,10 @@
 name: Build Debug APK
 
-# Cho phép kích hoạt thủ công bằng nút bấm
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - fix-770
 
 jobs:
   build:
