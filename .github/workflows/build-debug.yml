@@ -6,28 +6,43 @@ on:
     branches:
       - fix-770
 
+env:
+  # Chuyển sang Garbage Collector G1 để xử lý rác bộ nhớ hiệu quả hơn trên môi trường RAM hẹp
+  GRADLE_OPTS: "-Dorg.gradle.jvmargs='-Xmx5g -XX:+UseG1GC' -Dkotlin.daemon.jvmargs='-Xmx5g'"
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      # KỸ THUẬT 1: Bơm RAM ảo (Swap Space) để chống tràn bộ nhớ tuyệt đối
+      - name: Allocate Swap Space
+        run: |
+          sudo fallocate -l 8G /swapfile
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
+
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      # KỸ THUẬT 2: Kích hoạt Cache cho hệ thống 빌드 (Build System)
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
+          cache: 'gradle'
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
+      # KỸ THUẬT 3 & 4: Giải phóng CPU và bỏ qua kiểm thử (-x)
       - name: Build Debug APK
-        run: ./gradlew assembleDebug --no-daemon -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g"
+        run: ./gradlew assembleProdWebsiteDebug -x lint -x test --no-daemon
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: molly-fix-770-apk
-          path: app/build/outputs/apk/debug/*.apk
+          path: app/build/outputs/apk/**/*.apk
           
